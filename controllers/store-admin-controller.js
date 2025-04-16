@@ -8,7 +8,9 @@ const connection = mysql.createConnection({
     database: process.env.DB_NAME
 });
 
-
+const deleteUser = async (req, res) => {
+    
+}
 const setProduct = async (req, res) => {
     try{
         const { name,price,description,stock,image,category} = req.body;
@@ -65,3 +67,10 @@ const deleteProduct = async (req, res) => {
     }
 }
 
+
+
+module.exports = {
+    setProduct,
+    updateProduct,
+    deleteProduct
+}
