@@ -12,6 +12,7 @@ const placeOrder = async (req, res) => {
     const { userID, orderItems, status } = req.body;
 
     try {
+        await connection.beginTransaction();
         // Insert order
         const [orderResult] = await connection.promise().query(
             'INSERT INTO Orders (userID, totalAmount, status) VALUES (?, ?, ?)',
@@ -24,13 +25,23 @@ const placeOrder = async (req, res) => {
             await connection.promise().query(
                 'INSERT INTO OrderItems (orderID, productID, quantity, price) VALUES (?, ?, ?, ?)', 
                 [orderID, item.productID, item.quantity, item.price]
+                    
             );
-        }
 
+            await connection.promise().query(
+                'UPDATE Products SET stock = stock - ? WHERE ID = ?',
+                [item.quantity, item.productID]
+            );
+    }
+        await connection.commit(); // Commit the transaction
         res.json({ message: 'Order placed successfully' });
     } catch (err) {
+        await connection.rollback(); // Rollback the transaction in case of error
         console.error(err);
         res.status(500).send('Error placing order');
+    } finally {
+        await connection.end(); // Close the connection
+     
     }
 };
 
@@ -43,6 +54,9 @@ const getOrders = async (req, res) => {
     const userID = req.body.userID; // Get the user ID from the JWT token
 
     try {
+        
+        await connection.beginTransaction();
+
         // Fetch all orders for the user
         const [orders] = await connection.promise().query(
             'SELECT * FROM Orders WHERE userID = ? ',
@@ -81,12 +95,15 @@ const getOrders = async (req, res) => {
                 products: products
             });
         }
-
+        await connection.commit(); // Commit the transaction
         // Send the result
         res.json(ordersWithProducts);
     } catch (err) {
+        await connection.rollback(); // Rollback the transaction in case of error
         console.error(err);
         res.status(500).send('Error retrieving orders');
+    }finally {
+        await connection.end(); // Close the connection
     }
 };
 
@@ -99,7 +116,64 @@ const getAllProducts = async (req, res) => {
         res.status(500).send('Error retrieving products');
     }
 };
+
+const setProduct = async (req, res) => {
+    try{
+        const { name,price,description,stock,image,category} = req.body;
+        const [result] = await connection.promise().query(
+            'insett into Products (name,price,description,stock,image,category) values (?,?,?,?,?,?)',
+            [name,price,description,stock,image,category]
+        );
+        if (result.affectedRows > 0) {
+            res.json({ message: 'Product updated successfully' });
+        } else {
+            res.status(404).send('Product not found');
+        }
+    }
+    catch(err) {
+        console.error(err);
+        res.status(500).send('Error updating product');
+    }
+}
+const updateProduct = async (req, res) => {
+    try{
+        const { ID,name,price,description,stock,image,category} = req.body;
+        const [result] = await connection.promise().query(
+            'UPDATE Products SET name=?,price=?,description=?,stock=?,image=?,category=? WHERE ID=?',
+            [name,price,description,stock,image,category,ID]
+        );
+        if (result.affectedRows > 0) {
+            res.json({ message: 'Product updated successfully' });
+        } else {
+            res.status(404).send('Product not found');
+        }
+    }
+    catch(err) {
+        console.error(err);
+        res.status(500).send('Error updating product');
+    }
+}
+
+const deleteProduct = async (req, res) => {
+    try{
+        const { ID } = req.body;
+        const [result] = await connection.promise().query(
+            'DELETE FROM Products WHERE ID=?',
+            [ID]
+        );
+        if (result.affectedRows > 0) {
+            res.json({ message: 'Product deleted successfully' });
+        } else {
+            res.status(404).send('Product not found');
+        }
+    }
+    catch(err) {
+        console.error(err);
+        res.status(500).send('Error deleting product');
+    }
+}
 module.exports = {
     placeOrder,
-    getOrders
+    getOrders,
+    getAllProducts
 }

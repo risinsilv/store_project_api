@@ -4,7 +4,8 @@ const authMiddleware = require('../middleware/auth');
 
 const  {
    placeOrder,
-   getOrders
+   getOrders,
+   getAllProducts
 
 
 } = require("../controllers/store-user-controller")
