@@ -21,4 +21,12 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-module.exports = authenticateToken;
+// Middleware to check if the user is an admin
+const authorizeAdmin = (req, res, next) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).send('Access denied. Admins only.');
+    }
+    next(); // Pass control to the next middleware or route handler
+};
+
+module.exports = { authenticateToken, authorizeAdmin };

@@ -1,6 +1,7 @@
 const mysql = require('mysql2');
 require('dotenv').config();
 
+
 const connection = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -13,13 +14,15 @@ const deleteUser = async (req, res) => {
 }
 const setProduct = async (req, res) => {
     try{
-        const { name,price,description,stock,image,category} = req.body;
+        const { name,price,description,stock,category} = req.body;
+         const imageUrl = `/uploads/${req.file.filename}`;
+
         const [result] = await connection.promise().query(
-            'insett into Products (name,price,description,stock,image,category) values (?,?,?,?,?,?)',
-            [name,price,description,stock,image,category]
+            'insert into Products (name,price,description,stock,image,category) values (?,?,?,?,?,?)',
+            [name,price,description,stock,imageUrl,category]
         );
         if (result.affectedRows > 0) {
-            res.json({ message: 'Product updated successfully' });
+            res.json({ message: 'Product added successfully' });
         } else {
             res.status(404).send('Product not found');
         }
@@ -30,23 +33,33 @@ const setProduct = async (req, res) => {
     }
 }
 const updateProduct = async (req, res) => {
-    try{
-        const { ID,name,price,description,stock,image,category} = req.body;
-        const [result] = await connection.promise().query(
-            'UPDATE Products SET name=?,price=?,description=?,stock=?,image=?,category=? WHERE ID=?',
-            [name,price,description,stock,image,category,ID]
-        );
+    try {
+        const { ID, name, price, description, stock, category } = req.body;
+        let query = 'UPDATE Products SET name=?, price=?, description=?, stock=?, category=?';
+        const queryParams = [name, price, description, stock, category];
+
+        // Check if an image is provided
+        if (req.file) {
+            const imageUrl = `/uploads/${req.file.filename}`;
+            query += ', image=?';
+            queryParams.push(imageUrl);
+        }
+
+        query += ' WHERE ID=?';
+        queryParams.push(ID);
+
+        const [result] = await connection.promise().query(query, queryParams);
+
         if (result.affectedRows > 0) {
             res.json({ message: 'Product updated successfully' });
         } else {
             res.status(404).send('Product not found');
         }
-    }
-    catch(err) {
+    } catch (err) {
         console.error(err);
         res.status(500).send('Error updating product');
     }
-}
+};
 
 const deleteProduct = async (req, res) => {
     try{

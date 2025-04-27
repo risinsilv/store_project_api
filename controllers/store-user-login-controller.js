@@ -23,8 +23,8 @@ const connection = mysql.createConnection({
 
        // Insert the user into the database
        connection.query(
-           'INSERT INTO users (name,email,password) VALUES (?,?,?)',
-           [req.body.name,req.body.email, hash],
+           'INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)',
+           [req.body.name,req.body.email,hash,req.body.role],
            (err, result) => {
                if (err) {
                    console.error(err);
@@ -50,11 +50,11 @@ const login = (req, res) => {
             if (isMatch) {
                 // Generate a JWT
                 const token = jwt.sign(
-                    { id: user.id, email: user.email }, // Payload
+                    { id: user.id, role: user.role  }, // Payload
                     process.env.JWT_SECRET,            // Secret key
                     { expiresIn: '1h' }                // Token expiration
                 );
-                res.json({ message: 'Login successful', token,userID: user.ID });
+                res.json({ message: 'Login successful', token,userID: user.ID ,role: user.role });
             } else {
                 res.status(401).send('Invalid email or password');
             }
